@@ -1,4 +1,3 @@
-
 from espnfantasy import FantasyLeague
 import pprint
 import os
@@ -13,18 +12,17 @@ league_id = os.environ["LEAGUE_ID"]
 swid = os.environ["SWID"]
 espn_s2 = os.environ["ESPN_S2"]
 
-cookies = {
-    "swid": swid,
-    "espn_s2": espn_s2
-}
+cookies = {"swid": swid, "espn_s2": espn_s2}
 
 league = FantasyLeague(league_id, year, espn_s2, swid)
 
-week = 1
+week = 2
 data = league.get_matchup_data(week)
 league.load_team_names(week)
 
 league.get_league_data(week)
+
+print(f"WEEK {week} RESULTS:")
 
 if week == 1:
     print("get_weakest_rb")
