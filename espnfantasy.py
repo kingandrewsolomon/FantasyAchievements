@@ -20,6 +20,8 @@ class FantasyLeague:
         "": "NA",
     }
 
+    POSITION_CODES = {1: "QB", 2: "RB", 3: "WR", 4: "TE", 16: "D/ST", 5: "K", "": "NA"}
+
     STAT_MAPPING = {
         "0": "Pass Attempts",
         "1": "Completions",
@@ -107,17 +109,19 @@ class FantasyLeague:
                 # Append the week number to a list for each entry for each team
 
                 # Append player name, player fantasy team, and player ro
-                player_info["player_name"] = self.league_json["teams"][team]["roster"][
-                    "entries"
-                ][slot]["playerPoolEntry"]["player"]["fullName"]
-                player_info["Position"] = self.POSITION_MAPPING[
+                temp_info = self.league_json["teams"][team]["roster"]["entries"][slot][
+                    "playerPoolEntry"
+                ]["player"]
+                player_info["player_name"] = temp_info["fullName"]
+                player_info["Position"] = self.POSITION_CODES[
+                    temp_info["defaultPositionId"]
+                ]
+                player_info["Slot"] = self.POSITION_MAPPING[
                     self.league_json["teams"][team]["roster"]["entries"][slot][
                         "lineupSlotId"
                     ]
                 ]
-                player_info["proTeamId"] = self.league_json["teams"][team]["roster"][
-                    "entries"
-                ][slot]["playerPoolEntry"]["player"]["proTeamId"]
+                player_info["proTeamId"] = temp_info["proTeamId"]
 
                 # Initialize the variables before using them
                 player_info["stats"] = {}
@@ -251,7 +255,7 @@ class FantasyLeague:
         for team in self.player_dict:
             team_PAT[team] = ("name", 0)
             for player in self.player_dict[team]:
-                if player["Position"] == "K":
+                if player["Slot"] == "K":
                     if state == "made":
                         team_PAT[team] = (
                             player["player_name"],
@@ -285,7 +289,7 @@ class FantasyLeague:
             val = 0 if state == "max" else 1000
             team_rb[team] = ("name", val)
             for player in self.player_dict[team]:
-                if player["Position"] == "RB":
+                if player["Position"] == "RB" and player["Slot"] != "Bench":
                     rushing_yards = player["stats"]["Rushing Yards"]
                     if state == "max":
                         if team_rb[team][1] <= rushing_yards:
@@ -314,7 +318,7 @@ class FantasyLeague:
         for team in self.player_dict:
             team_interceptions[team] = ("name", 0)
             for player in self.player_dict[team]:
-                if player["Position"] == "QB":
+                if player["Slot"] == "QB":
                     interceptions = player["stats"]["Interceptions"]
                     if team_interceptions[team][1] <= interceptions:
                         team_interceptions[team] = (
@@ -332,7 +336,7 @@ class FantasyLeague:
         for team in self.player_dict:
             team_qb[team] = ("name", 0)
             for player in self.player_dict[team]:
-                if player["Position"] == "QB":
+                if player["Slot"] == "QB":
                     team_qb[team] = (
                         player["player_name"],
                         player["stats"]["Rushing Yards"],
@@ -358,7 +362,7 @@ class FantasyLeague:
         for team in self.player_dict:
             team_k[team] = ("name", 0)
             for player in self.player_dict[team]:
-                if player["Position"] == "K":
+                if player["Slot"] == "K":
                     attempts = player["stats"]["Field Goals Attempted"]
                     team_k[team] = (player["player_name"], attempts)
         return team_k
@@ -385,13 +389,13 @@ class FantasyLeague:
             qb_stats = {}
             for player in self.player_dict[team]:
                 stats = player["stats"]
-                if player["Position"] == "QB":
+                if player["Position"] == "QB" and player["Slot"] != "Bench":
                     qb_stats["proTeamId"] = player["proTeamId"]
                     qb_stats["Pass Touchdowns"] = stats["Pass Touchdowns"]
                     qb_stats["Rushing Touchdowns"] = stats["Rushing Touchdowns"]
                     qb_stats["Receiving Touchdowns"] = stats["Receiving Touchdowns"]
 
-                elif player["Position"] != "Bench":
+                elif player["Slot"] != "Bench":
                     team_set.add(player["proTeamId"])
                     team_touchdowns[team] += stats["Pass Touchdowns"]
                     team_touchdowns[team] += stats["Rushing Touchdowns"]
@@ -424,7 +428,7 @@ class FantasyLeague:
             val = 0 if state == "max" else 1000
             team_flexes[team] = ("name", val)
             for player in self.player_dict[team]:
-                if player["Position"] == "FLEX":
+                if player["Slot"] == "FLEX":
                     player_name = player["player_name"]
                     if state == "max":
                         if team_flexes[team][1] <= player["stats"]["Actual Total"]:
@@ -460,7 +464,7 @@ class FantasyLeague:
             targets = 0 if state == "max" else 1000
             team_receptions[team] = ("name", targets, 1)
             for player in self.player_dict[team]:
-                if player["Position"] == position:
+                if player["Position"] == position and player["Slot"] != "Bench":
                     if state == "max":
                         if targets < player["stats"]["Targets"]:
                             player_name = player["player_name"]
@@ -522,7 +526,7 @@ class FantasyLeague:
         for team in self.player_dict:
             team_defense[team] = 0
             for player in self.player_dict[team]:
-                if player["Position"] == "D/ST":
+                if player["Slot"] == "D/ST":
                     team_defense[team] = player["stats"]["Actual Total"]
         return team_defense
 
