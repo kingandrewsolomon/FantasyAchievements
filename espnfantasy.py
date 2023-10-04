@@ -1,4 +1,5 @@
 import requests
+from team_colors import NFL_TEAMS
 
 
 class FantasyLeague:
@@ -6,7 +7,6 @@ class FantasyLeague:
     ESPN Fantasy Football League class for pulling data from the ESPN API
     """
 
-    BASE_URL = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league_id}"
     POSITION_MAPPING = {
         0: "QB",
         2: "RB",
@@ -96,32 +96,24 @@ class FantasyLeague:
         """
 
         # Loop through each team
-        for team in range(0, len(self.league_json["teams"])):
-            team_name = self.teams_dict[self.league_json["teams"][team]["id"]][
-                "team_name"
-            ]
+        for team in self.league_json["teams"]:
+            team_name = self.teams_dict[team["name"]]["team_name"]
             self.player_dict[team_name] = []
             # Loop through each roster slot in each team
-            for slot in range(
-                0, len(self.league_json["teams"][team]["roster"]["entries"])
-            ):
+            for slot in team["roster"]["entries"]:
                 player_info = {}
                 # Append the week number to a list for each entry for each team
 
                 # Append player name, player fantasy team, and player ro
-                temp_info = self.league_json["teams"][team]["roster"]["entries"][slot][
-                    "playerPoolEntry"
-                ]["player"]
+                temp_info = slot["playerPoolEntry"]["player"]
+                player_info["id"] = temp_info["id"]
                 player_info["player_name"] = temp_info["fullName"]
                 player_info["Position"] = self.POSITION_CODES[
                     temp_info["defaultPositionId"]
                 ]
-                player_info["Slot"] = self.POSITION_MAPPING[
-                    self.league_json["teams"][team]["roster"]["entries"][slot][
-                        "lineupSlotId"
-                    ]
-                ]
+                player_info["Slot"] = self.POSITION_MAPPING[slot["lineupSlotId"]]
                 player_info["proTeamId"] = temp_info["proTeamId"]
+                player_info["proTeamColorScheme"] = NFL_TEAMS[temp_info["proTeamId"]]
 
                 # Initialize the variables before using them
                 player_info["stats"] = {}
@@ -133,9 +125,7 @@ class FantasyLeague:
 
                 # Loop through each statistic set for each roster slot for each team
                 # to get projected and actual scores
-                for stat in self.league_json["teams"][team]["roster"]["entries"][slot][
-                    "playerPoolEntry"
-                ]["player"]["stats"]:
+                for stat in slot["playerPoolEntry"]["player"]["stats"]:
                     if stat["scoringPeriodId"] == week:
                         if stat["statSourceId"] == 0:
                             for statMap in self.STAT_MAPPING:
@@ -157,32 +147,30 @@ class FantasyLeague:
         team_json = self.make_request(week, view="mTeam")
 
         # Loop through each team in the JSON
-        for team in range(0, len(team_json["teams"])):
+        for team in team_json["teams"]:
             # Append the team id and team name to the list
-            team_id = team_json["teams"][team]["id"]
-            self.teams_dict[team_id] = {}
-            team_dict = self.teams_dict[team_id]
-            team_dict["team_primary_owner"] = team_json["teams"][team]["primaryOwner"]
-            team_dict["team_location"] = team_json["teams"][team]["location"]
-            team_dict["team_nickname"] = team_json["teams"][team]["nickname"]
-            team_dict["team_name"] = team_json["teams"][team]["name"]
-            team_dict["owner_first_name"] = team_json["members"][team]["firstName"]
-            team_dict["owner_last_name"] = team_json["members"][team]["lastName"]
-            team_dict["team_cookie"] = team_json["members"][team]["id"]
+            team_name = team["name"]
+            self.teams_dict[team_name] = {}
+            team_dict = self.teams_dict[team_name]
+            team_dict["team_primary_owner"] = team["primaryOwner"]
+            team_dict["team_location"] = team["location"]
+            team_dict["team_nickname"] = team["nickname"]
+            team_dict["team_name"] = team["name"]
+            team_dict["profile"] = team["logo"]
+            for member in team_json["members"]:
+                if member["id"] == team["primaryOwner"]:
+                    team_dict["owner_first_name"] = member["firstName"]
+                    team_dict["owner_last_name"] = member["lastName"]
+                    team_dict["team_cookie"] = member["id"]
+                    break
 
     def get_league_data(self, week):
-        """
-        Create the league DataFrame
-        """
-
         self.league_json = self.load_league(week)
         self.load_player_data(week)
         self.load_team_names(week)
 
     def get_matchup_data(self, week):
-        matchup_json = self.make_request(week, "mMatchup")
-
-        return matchup_json
+        return self.make_request(week, "mMatchup")
 
     def _get_receiving_yards(self):
         team_reception = {}
@@ -313,23 +301,39 @@ class FantasyLeague:
         else:
             return sorted_zip(team_rb, "min")
 
-    def get_most_interceptions(self, detailed=False):
-        team_interceptions = {}
-        for team in self.player_dict:
-            team_interceptions[team] = ("name", 0)
-            for player in self.player_dict[team]:
-                if player["Slot"] == "QB":
-                    interceptions = player["stats"]["Interceptions"]
-                    if team_interceptions[team][1] <= interceptions:
-                        team_interceptions[team] = (
-                            player["player_name"],
-                            interceptions,
+    def get_blindest_qb(self, detailed=False):
+        if not hasattr(self, "team_interceptions"):
+            self.team_interceptions = {}
+            for team in self.player_dict:
+                self.team_interceptions[team] = ("name", 0, 0)
+                for player in self.player_dict[team]:
+                    if player["Slot"] == "QB" and player["Position"] != "BENCH":
+                        interceptions = player["stats"]["Interceptions"]
+                        pct_completions = (
+                            player["stats"]["Completions"]
+                            / player["stats"]["Pass Attempts"]
                         )
+                        if (
+                            self.team_interceptions[team][1] <= interceptions
+                            and self.team_interceptions[team][2] <= pct_completions
+                        ):
+                            self.team_interceptions[team] = (
+                                player["player_name"],
+                                interceptions,
+                                pct_completions,
+                            )
+
+            self.sorted_team_interceptions = sorted(
+                self.team_interceptions.items(), key=self.blind_qb_sort
+            )
 
         if not detailed:
-            return max_item(team_interceptions)
+            return self.sorted_team_interceptions[0]
         else:
-            return sorted_zip(team_interceptions, "max")
+            return self.sorted_team_interceptions
+
+    def blind_qb_sort(self, item):
+        return (-item[1][1], item[1][2])
 
     def _get_qb_rush(self):
         team_qb = {}
@@ -567,7 +571,7 @@ def sorted_zip(vals: dict, reverse: str):
 
 
 def max_item(vals: dict):
-    t = 0
+    t = -1
     to = {}
     for item in vals.items():
         if t < item[1][1]:

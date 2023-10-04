@@ -1,5 +1,6 @@
 .env
 *.json
 *.txt
+*.png
 
 __pycache__/
