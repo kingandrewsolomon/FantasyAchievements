@@ -38,14 +38,15 @@ class FFGraphic:
         r = requests.get(player_url, stream=True)
         player_img = Image.open(r.raw)
 
-        try:
+        if ".svg" in team_url:
+            # For SVGs
+            r = requests.get(team_url, stream=True)
+            team_img = cairosvg.svg2png(bytestring=r.content)
+            team_img = Image.open(BytesIO(team_img))
+        else:
             # For regular PNGS
             r = requests.get(team_url, stream=True)
             team_img = Image.open(r.raw)
-        except:
-            # For SVGs
-            team_img = cairosvg.svg2png(bytestring=r.content)
-            team_img = Image.open(BytesIO(team_img))
 
         team_img = team_img.resize((TEAM_LOGO_WIDTH, TEAM_LOGO_HEIGHT), Image.ANTIALIAS)
 

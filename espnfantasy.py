@@ -336,30 +336,37 @@ class FantasyLeague:
         return (-item[1][1], item[1][2])
 
     def _get_qb_rush(self):
-        team_qb = {}
-        for team in self.player_dict:
-            team_qb[team] = ("name", 0)
-            for player in self.player_dict[team]:
-                if player["Slot"] == "QB":
-                    team_qb[team] = (
-                        player["player_name"],
-                        player["stats"]["Rushing Yards"],
-                    )
-        return team_qb
+        if not hasattr(self, "team_qb_rush"):
+            self.team_qb_rush = {}
+            for team in self.player_dict:
+                self.team_qb_rush[team] = ("name", 0)
+                for player in self.player_dict[team]:
+                    if player["Slot"] == "QB":
+                        self.team_qb_rush[team] = (
+                            player["player_name"],
+                            player["stats"]["Rushing Yards"],
+                        )
+            self.sorted_team_qb_rush = sorted(
+                self.team_qb_rush.items(), key=self.qb_rush
+            )
+        return self.sorted_team_qb_rush
+
+    def qb_rush(self, item):
+        return item[1][1]
 
     def get_fastest_qb(self, detailed=False):
         team_qb = self._get_qb_rush()
         if not detailed:
-            return max_item(team_qb)
+            return team_qb[-1]
         else:
-            return sorted_zip(team_qb, "max")
+            return team_qb
 
     def get_slowest_qb(self, detailed=False):
         team_qb = self._get_qb_rush()
         if not detailed:
-            return min_item(team_qb)
+            return team_qb[0]
         else:
-            return sorted_zip(team_qb, "min")
+            return team_qb
 
     def _get_kicker_score(self):
         team_k = {}
