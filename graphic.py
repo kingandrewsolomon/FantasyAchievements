@@ -1,9 +1,8 @@
-from io import BytesIO, StringIO
+from io import BytesIO
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from team_colors import *
-import urllib.request
 import requests
 import cairosvg
 
@@ -20,14 +19,30 @@ class FFGraphic:
     PLAYER_NAME_FONT_SIZE = 38
     TEAM_NAME_FONT_SIZE = 12
     PLAYER_URL = "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{player_id}.png&w={player_width}&h={player_height}&cb=1"
+    TEAM_DEFENSE_URL = "https://a.espncdn.com/combiner/i?img=/i/teamlogos/nfl/500/{team_name}.png&w={team_width}&h={team_height}&cb=1"
 
-    def __init__(self, team_data, player_data, achievement_title, result, unit) -> None:
-        player_id = player_data["id"]
-        player_url = self.PLAYER_URL.format(
-            player_id=player_id,
-            player_width=PLAYER_ICON_WIDTH,
-            player_height=PLAYER_ICON_HEIGHT,
-        )
+    def __init__(
+        self,
+        team_data: dict,
+        player_data: dict,
+        achievement_title: str,
+        result,
+        unit: str,
+    ) -> None:
+        if player_data["Position"] != "D/ST":
+            player_id = player_data["id"]
+            player_url = self.PLAYER_URL.format(
+                player_id=player_id,
+                player_width=PLAYER_ICON_WIDTH,
+                player_height=PLAYER_ICON_HEIGHT,
+            )
+        else:
+            team_name = player_data["team_abbr"]
+            player_url = self.TEAM_DEFENSE_URL.format(
+                team_name=team_name,
+                team_width=PLAYER_ICON_WIDTH,
+                team_height=PLAYER_ICON_HEIGHT,
+            )
         player_name = player_data["player_name"]
 
         team_url = team_data["profile"]

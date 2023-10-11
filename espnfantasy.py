@@ -1,47 +1,12 @@
 import requests
 from team_colors import NFL_TEAMS
+from consts import *
 
 
 class FantasyLeague:
     """
     ESPN Fantasy Football League class for pulling data from the ESPN API
     """
-
-    POSITION_MAPPING = {
-        0: "QB",
-        2: "RB",
-        4: "WR",
-        6: "TE",
-        16: "D/ST",
-        17: "K",
-        23: "FLEX",
-        20: "Bench",
-        21: "IR",
-        "": "NA",
-    }
-
-    POSITION_CODES = {1: "QB", 2: "RB", 3: "WR", 4: "TE", 16: "D/ST", 5: "K", "": "NA"}
-
-    STAT_MAPPING = {
-        "0": "Pass Attempts",
-        "1": "Completions",
-        "3": "Pass Yards",
-        "4": "Pass Touchdowns",
-        "20": "Interceptions",
-        "23": "Rushing Attempts",
-        "24": "Rushing Yards",
-        "25": "Rushing Touchdowns",
-        "41": "Receptions",
-        "42": "Receiving Yards",
-        "43": "Receiving Touchdowns",
-        "58": "Targets",
-        "83": "Field Goals Made",
-        "84": "Field Goals Attempted",
-        "86": "Extra Points Made",
-        "87": "Extra Points Attempted",
-        "214": "Yards1",
-        "216": "Yards2",
-    }
 
     def __init__(self, league_id, year, espn_s2, swid):
         self.league_id = league_id
@@ -108,17 +73,18 @@ class FantasyLeague:
                 temp_info = slot["playerPoolEntry"]["player"]
                 player_info["id"] = temp_info["id"]
                 player_info["player_name"] = temp_info["fullName"]
-                player_info["Position"] = self.POSITION_CODES[
-                    temp_info["defaultPositionId"]
-                ]
-                player_info["Slot"] = self.POSITION_MAPPING[slot["lineupSlotId"]]
+                player_info["Position"] = POSITION_CODES[temp_info["defaultPositionId"]]
+                player_info["Slot"] = POSITION_MAPPING[slot["lineupSlotId"]]
+                if player_info["Slot"] == "D/ST":
+                    player_info["team_abbr"] = TEAM_ABBR_MAPPING[temp_info["firstName"]]
+
                 player_info["proTeamId"] = temp_info["proTeamId"]
                 player_info["proTeamColorScheme"] = NFL_TEAMS[temp_info["proTeamId"]]
 
                 # Initialize the variables before using them
                 player_info["stats"] = {}
-                for statMap in self.STAT_MAPPING:
-                    statName = self.STAT_MAPPING[statMap]
+                for statMap in STAT_MAPPING:
+                    statName = STAT_MAPPING[statMap]
                     player_info["stats"][statName] = 0
 
                 player_info["stats"]["Actual Total"] = 0
@@ -128,8 +94,8 @@ class FantasyLeague:
                 for stat in slot["playerPoolEntry"]["player"]["stats"]:
                     if stat["scoringPeriodId"] == week:
                         if stat["statSourceId"] == 0:
-                            for statMap in self.STAT_MAPPING:
-                                statName = self.STAT_MAPPING[statMap]
+                            for statMap in STAT_MAPPING:
+                                statName = STAT_MAPPING[statMap]
                                 if statMap in stat["stats"]:
                                     player_info["stats"][statName] = stat["stats"][
                                         statMap
@@ -535,10 +501,13 @@ class FantasyLeague:
     def _get_defense(self):
         team_defense = {}
         for team in self.player_dict:
-            team_defense[team] = 0
+            team_defense[team] = ("team", 0)
             for player in self.player_dict[team]:
                 if player["Slot"] == "D/ST":
-                    team_defense[team] = player["stats"]["Actual Total"]
+                    team_defense[team] = (
+                        player["player_name"],
+                        player["stats"]["Actual Total"],
+                    )
         return team_defense
 
     def get_strongest_defense(self, detailed=False):
