@@ -499,30 +499,37 @@ class FantasyLeague:
             return sorted_zip(wr_receptions, "min")
 
     def _get_defense(self):
-        team_defense = {}
-        for team in self.player_dict:
-            team_defense[team] = ("team", 0)
-            for player in self.player_dict[team]:
-                if player["Slot"] == "D/ST":
-                    team_defense[team] = (
-                        player["player_name"],
-                        player["stats"]["Actual Total"],
-                    )
-        return team_defense
+        if not hasattr(self, "team_defense"):
+            self.team_defense = {}
+            for team in self.player_dict:
+                self.team_defense[team] = ("team", 0)
+                for player in self.player_dict[team]:
+                    if player["Slot"] == "D/ST":
+                        self.team_defense[team] = (
+                            player["player_name"],
+                            player["stats"]["Actual Total"],
+                        )
+            self.sorted_team_defense = sorted(
+                self.team_defense.items(), key=self.defense_points
+            )
+        return self.sorted_team_defense
+
+    def defense_points(self, item):
+        return item[1][1]
 
     def get_strongest_defense(self, detailed=False):
         team_defense = self._get_defense()
         if not detailed:
-            return item(team_defense, "max")
+            return team_defense[-1]
         else:
-            return sorted_zip(team_defense, "max")
+            return team_defense
 
     def get_weakest_defense(self, detailed=False):
         team_defense = self._get_defense()
         if not detailed:
-            return item(team_defense, "min")
+            return team_defense[0]
         else:
-            return sorted_zip(team_defense, "min")
+            return team_defense
 
     def get_most_injuries(self, detailed=False):
         team_injury_count = {}
