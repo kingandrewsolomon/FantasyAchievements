@@ -123,7 +123,7 @@ class FFGraphic:
 
         x, y = 27, 227
         if unit == "%":
-            result = (result[0] / result[1]) * 100
+            result = round((result[0] / result[1]) * 100)
         else:
             result = result[0]
         achievement_result = f"{result} {unit.upper()}"

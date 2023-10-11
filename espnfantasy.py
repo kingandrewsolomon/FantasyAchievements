@@ -207,20 +207,15 @@ class FantasyLeague:
     def _get_PAT(self, state):
         team_PAT = {}
         for team in self.player_dict:
-            team_PAT[team] = ("name", 0)
+            attempts = 0 if state == "made" else 1000
+            team_PAT[team] = ("name", 0, attempts)
             for player in self.player_dict[team]:
                 if player["Slot"] == "K":
-                    if state == "made":
-                        team_PAT[team] = (
-                            player["player_name"],
-                            player["stats"]["Extra Points Made"],
-                        )
-                    else:
-                        PAT_made = player["stats"]["Extra Points Made"]
-                        PAT_attempted = player["stats"]["Extra Points Attempted"]
-                        made_attempt = PAT_made - PAT_attempted
-                        if team_PAT[team][1] > made_attempt:
-                            team_PAT[team] = (player["player_name"], made_attempt)
+                    team_PAT[team] = (
+                        player["player_name"],
+                        player["stats"]["Extra Points Made"],
+                        player["stats"]["Extra Points Attempted"],
+                    )
         return team_PAT
 
     def get_most_made_PAT(self, detailed=False):
@@ -438,10 +433,13 @@ class FantasyLeague:
     def _get_receptions(self, position, state):
         team_receptions = {}
         for team in self.player_dict:
-            targets = 0 if state == "max" else 1000
-            team_receptions[team] = ("name", targets, 1)
+            targets = -1 if state == "max" else 1000
+            receptions = 0 if state == "max" else 1000
+            team_receptions[team] = ("name", receptions, targets)
             for player in self.player_dict[team]:
-                if player["Position"] == position and player["Slot"] != "Bench":
+                if player["Position"] == position and (
+                    player["Slot"] == "WR" or player["Slot"] == "FLEX"
+                ):
                     if state == "max":
                         if targets < player["stats"]["Targets"]:
                             player_name = player["player_name"]
@@ -458,11 +456,14 @@ class FantasyLeague:
                                 )
 
                     elif state == "min":
-                        if targets > player["stats"]["Targets"]:
+                        if player["stats"]["Targets"] < targets:
                             player_name = player["player_name"]
                             targets = player["stats"]["Targets"]
                             receptions = player["stats"]["Receptions"]
-                            if team_receptions[team][1] > receptions / targets:
+                            rec_tar = (
+                                team_receptions[team][1] / team_receptions[team][2]
+                            )
+                            if rec_tar > receptions / targets:
                                 team_receptions[team] = (
                                     player_name,
                                     receptions,
