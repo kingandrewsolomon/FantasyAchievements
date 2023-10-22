@@ -335,8 +335,8 @@ class FantasyLeague:
             team_k[team] = ("name", 0)
             for player in self.player_dict[team]:
                 if player["Slot"] == "K":
-                    attempts = player["stats"]["Field Goals Attempted"]
-                    team_k[team] = (player["player_name"], attempts)
+                    points = player["stats"]["Actual Total"]
+                    team_k[team] = (player["player_name"], points)
         return team_k
 
     def get_fire_kicker(self, detailed=False):
