@@ -17,7 +17,7 @@ cookies = {"swid": swid, "espn_s2": espn_s2}
 
 league = FantasyLeague(league_id, year, espn_s2, swid)
 
-week = 5
+week = 7
 data = league.get_matchup_data(week)
 league.load_team_names(week)
 

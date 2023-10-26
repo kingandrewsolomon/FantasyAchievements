@@ -119,8 +119,9 @@ class FantasyLeague:
             self.teams_dict[team_name] = {}
             team_dict = self.teams_dict[team_name]
             team_dict["team_primary_owner"] = team["primaryOwner"]
-            team_dict["team_location"] = team["location"]
-            team_dict["team_nickname"] = team["nickname"]
+            # ESPN may have removed these fields
+            # team_dict["team_location"] = team["location"]
+            # team_dict["team_nickname"] = team["nickname"]
             team_dict["team_name"] = team["name"]
             team_dict["profile"] = team["logo"]
             for member in team_json["members"]:
