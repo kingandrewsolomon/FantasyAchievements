@@ -17,7 +17,7 @@ cookies = {"swid": swid, "espn_s2": espn_s2}
 
 league = FantasyLeague(league_id, year, espn_s2, swid)
 
-week = 7
+week = 9
 data = league.get_matchup_data(week)
 league.load_team_names(week)
 
@@ -68,7 +68,7 @@ elif week == 8:
     achievement_title = "Most Made PAT"
     achievement_result = league.get_most_made_PAT()
     achievement_list = league.get_most_made_PAT(detailed=True)
-    achievement_unit = "%"
+    achievement_unit = "Extra Points"
 elif week == 9:
     achievement_title = "Butter WR"
     achievement_result = league.get_butter_wr()

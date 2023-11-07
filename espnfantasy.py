@@ -439,7 +439,7 @@ class FantasyLeague:
             team_receptions[team] = ("name", receptions, targets)
             for player in self.player_dict[team]:
                 if player["Position"] == position and (
-                    player["Slot"] == "WR" or player["Slot"] == "FLEX"
+                    player["Slot"] == position or player["Slot"] == "FLEX"
                 ):
                     if state == "max":
                         if targets < player["stats"]["Targets"]:
@@ -449,7 +449,7 @@ class FantasyLeague:
                             rec_tar = (
                                 team_receptions[team][1] / team_receptions[team][2]
                             )
-                            if rec_tar <= receptions / targets:
+                            if targets == 0 or rec_tar <= receptions / targets:
                                 team_receptions[team] = (
                                     player_name,
                                     receptions,
@@ -464,7 +464,7 @@ class FantasyLeague:
                             rec_tar = (
                                 team_receptions[team][1] / team_receptions[team][2]
                             )
-                            if rec_tar > receptions / targets:
+                            if targets == 0 or rec_tar > receptions / targets:
                                 team_receptions[team] = (
                                     player_name,
                                     receptions,
